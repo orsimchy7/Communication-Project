@@ -1,15 +1,15 @@
 % EbNo script
-
 clear all;
 close all;
 
 % -- Params --
 simParams.B = 1; %messages num
-simParams.K = 15; %bits per message
+simParams.K = 12; %bits per message
 simParams.Tsym = 1e-3;
 simParams.fc = 15e3;
 simParams.Fs = 200e3;
 simParams.lambda = 1; %according to articles
+simParams.L = 5; % ad
 simParams.figFlag = 0;
 
 
@@ -17,12 +17,13 @@ simParams.figFlag = 0;
 BW = 1 / simParams.Tsym; %assuming beta = 1
 BWn = 3 * BW;
 EbNo_dB = 0:18;
-SNRa = EbNo_dB + 10*log10(BW / BWn) - 10; %in BMOCZ, 1 symbol is 1 bit
+SNRa = EbNo_dB + 10*log10(BW / BWn) - 20; %in BMOCZ, 1 symbol is 1 bit
 BER = zeros(length(EbNo_dB), 1);
+
 for i = 1 : length(EbNo_dB)
     SNR = SNRa(i);
-    [enc, dec] = MOCZstart(simParams, SNR);
-    errosNum = sum(abs(enc - dec), 'all');
+    [M_enc, M_dec] = MOCZstart(simParams, SNR);
+    errosNum = sum(abs(M_enc - M_dec), 'all');
     BER(i) = errosNum / (simParams.B * simParams.K);
 end
 

@@ -1,23 +1,23 @@
 % EbNo script
-
 clear all;
 close all;
 
 % -- Params --
 simParams.B = 1; %messages num
-simParams.K = 400; %bits per message
+simParams.K = 12; %bits per message
 simParams.Tsym = 1e-3;
 simParams.fc = 15e3;
 simParams.Fs = 200e3;
 simParams.lambda = 1; %according to articles
-simParams.figFlag = 0;
+simParams.L = 5; % additional taps that the channel conv adds
+simParams.figFlag = 1;
 
 
 
 BW = 1 / simParams.Tsym; %assuming beta = 1
 BWn = 3 * BW;
 EbNo_dB = 0:18;
-SNRa = EbNo_dB + 10*log10(BW / BWn) - 20; %in BMOCZ, 1 symbol is 1 bit
+SNRa = EbNo_dB + 10*log10(BW / BWn); %in BMOCZ, 1 symbol is 1 bit
 BER = zeros(length(EbNo_dB), 1);
 
 for i = 1 : length(EbNo_dB)
