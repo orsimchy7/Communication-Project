@@ -10,10 +10,10 @@ function [signal_pb, x_decoded] = pulseSHP(x, simParams, mode)
     Tsym = simParams.Tsym;
     fc = simParams.fc;
     Fs = simParams.Fs;
+    beta = simParams.betha;
  
     sps = Tsym * Fs; %samples per symbol
     span = 6;
-    beta = 1; % how much is beta?
     h_coeff = rcosdesign(beta, span, sps); %taps num is span*sps + 1
     normalization_factor = 1;
     group_delay = span * sps;
@@ -31,6 +31,7 @@ function [signal_pb, x_decoded] = pulseSHP(x, simParams, mode)
         x_upsamp = upsample(x_cor, sps);
         x_upsamp = [x_upsamp; zeros(group_delay,1)];
         signal_bb = filter(h_coeff, normalization_factor, x_upsamp);
+        t = (0:length(signal_bb)-1)' / Fs;
 
 %         h_channel_up = upsample(h_channel, sps);
 %         signal_bb_faded = conv(h_channel_up, signal_bb);
@@ -39,6 +40,7 @@ function [signal_pb, x_decoded] = pulseSHP(x, simParams, mode)
     elseif strcmp(mode, 'demodulate')
         % -- Decoding raised cosing --
         t = (0:1/Fs:Tsym*(K + 1 + (group_delay/sps)) - 1/Fs)';
+        t = (0:length(x)-1)' / Fs;
         mixed_x = x.*exp(-1i*2*pi*fc*t);
         x_bb_filtered = filter(h_coeff, normalization_factor, mixed_x);
         

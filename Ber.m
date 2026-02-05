@@ -11,18 +11,18 @@ simParams.Fs = 200e3;
 simParams.lambda = 1; %according to articles
 simParams.L = 5; % additional taps that the channel conv adds
 simParams.figFlag = 1;
+simParams.betha = 1;
 
 
-
-BW = 1 / simParams.Tsym; %assuming beta = 1
-BWn = 3 * BW;
+BW = 1 / simParams.Tsym; 
+BWn = (1+simParams.betha)*BW; %assuming beta = 1
 EbNo_dB = 0:18;
-SNRa = EbNo_dB + 10*log10(BW / BWn); %in BMOCZ, 1 symbol is 1 bit
+SNRa = EbNo_dB + 10*log10(BW / BWn); %in BMOCZ, 1 symbol is 1 bit. BWeff = (1+betha)/Tsym = (1+betha)*BW
 BER = zeros(length(EbNo_dB), 1);
 
 for i = 1 : length(EbNo_dB)
     SNR = SNRa(i);
-    [M_enc, M_dec] = MOCZstart(simParams, SNR);
+    [M_enc, M_dec] = MOCZmodem(simParams, SNR);
     errosNum = sum(abs(M_enc - M_dec), 'all');
     BER(i) = errosNum / (simParams.B * simParams.K);
 end
