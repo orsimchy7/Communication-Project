@@ -1,0 +1,63 @@
+clear all;
+close all;
+
+% -- Params --
+fileName = 'MOCZ_tx.mat';
+simParams.B = 5; %messages num in a packet
+simParams.K = 12; %bits per message
+simParams.Tsym = 1e-3;
+simParams.fc = 15e3;
+simParams.Fs = 200e3;
+simParams.lambda = 1; %according to articles
+simParams.L = 5; % additional taps that the channel conv adds
+simParams.figFlag = 1;
+simParams.betha = 1; %assuming beta = 1
+B = 5; %num of sequences in a message
+L = 5; % additional taps that the channel conv adds
+K = 12 ; %X(z) polynomial order. there are K+1 coefficents
+Tsym = 1e-3;
+fc = 15e3;
+Fs = 200e3;
+lambda = 1;
+figFlag = 1;
+
+BW = 1 / simParams.Tsym; 
+BWn = (1+simParams.betha)*BW; 
+
+simParams = struct('B', 5, 'K', 12, 'Tsym', 1e-3, 'fc', 15e3, 'Fs', 200e3, 'lambda', 1, 'L', 5, 'figFlag', 1, 'betha', 1);
+
+% P is a binary packet. there are B messages (columns) and K bits in each
+% message
+P = randi([0,1], K, B); 
+signal_pb_total = [];
+
+% -- Huffman BMOCZ --
+Kidxs = 1:K;
+R = sqrt(1+2*lambda*sin(pi/K));
+theta_c = ((2*pi) * (Kidxs / K))';
+
+    
+% Process each message in the packet
+for b = 1:B
+    % Get current message bits
+    M = P(:, b);
+    
+    % Generate Alphas (Roots)
+    alphas = ((1-M)*(R^(-1)) + M * R) .* exp(1i*theta_c);
+    
+    % Generate Coefficients
+    x_un = flip(poly(alphas))'; %finding K+1 coefficients and flip - now the free coefficent is first
+    x = (x_un / norm(x_un)) * sqrt(K+1); % normalize to sqrt(K+1). now total energy of signal will be K+1
+    
+    x_with_guard = [x; zeros(L, 1)]; %Guard of zeros (channel of L taps)
+    
+    % Pulse Shape and Modulate to Passband
+    [signal_pb_segment, ~] = pulseSHP(x_with_guard, simParams, 'modulate');
+    
+    % Concatenate to the total packet vector
+    signal_pb_total = [signal_pb_total; signal_pb_segment];
+end
+
+% Save to .mat file
+save(fileName, 'signal_pb_total', 'P', 'simParams');
+fprintf('MOCZ signal with B=%d messages saved to %s\n', B, fileName);

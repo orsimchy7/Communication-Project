@@ -1,4 +1,4 @@
-function [M, message_rec] = MOCZmodem(simParams, SNR)
+function [M, message_rec] = MOCZmodem(simParams)
 
     % -- Params --
     B = simParams.B; %num of sequences in a message
@@ -25,7 +25,6 @@ function [M, message_rec] = MOCZmodem(simParams, SNR)
     
     x_un = flip(poly(alphas))'; %finding coefficients and flip - now the free coefficent is first
     x = (x_un / norm(x_un)) * sqrt(K+1); % normalize to sqrt(K+1). now total energy of signal will be K+1
-    sigPower = var(x);
     x = [x ; zeroPad]; %Guard of zeros (channel of L taps)
     
     [x_pb, ~] = pulseSHP(x, simParams, 'modulate');
@@ -51,38 +50,10 @@ function [M, message_rec] = MOCZmodem(simParams, SNR)
     %     hold off;
     % end
 
-    %% adding channel
-    pathDelays = (0:4) * Tsym; % 5 taps spaced by 1 symbol each
-
-    %generating path gains and normalizing for AverageChannelEnergy = 1
-    %according to the:  
-    %MOCZ_for_Blind_Short-Packet_Communication_Basic_Principles paper -
-    %section V
-    pathGains_dB = [0, -2, -3, -6, -10]; % the average power of echo [dB]
-    linearPower = 10.^(pathGains_dB / 10); %Convert to linear power
-    totalEnergy = sum(linearPower); %calculate total channel energy
-    normalizedLinearGains = linearPower / totalEnergy; %Normalize the linear gains so the total energy is 1
-    pathGains_normalized = 10 * log10(normalizedLinearGains); %convert back to [dB]
-    
-    % Create the Rayleigh Channel Object
-    fadingChannel = comm.RayleighChannel(...
-        'SampleRate', Fs, ...
-        'PathDelays', pathDelays, ...
-        'AveragePathGains', pathGains_normalized, ...
-        'MaximumDopplerShift', L); % Adjust Doppler for motion/fading speed
-    % The output will be longer than the input due to the delay spread
-    chanOutput = fadingChannel(x_pb);
-    
-    % Note: To see the "extra" symbols, you may need to flush the channel 
-    % or append zeros to the input to allow the multi-path tails to exit.
-    release(fadingChannel);
-    x_pb_noisy = awgn(chanOutput, SNR ,10*log10(sigPower));
     
     %% Decoding
     
-    [~, x_decoded] = pulseSHP(x_pb_noisy, simParams,'demodulate');
-
-
+    [~, x_decoded] = pulseSHP(x_pb, simParams,'demodulate');
     message_rec = DiZeT(R, theta_c, x_decoded, K);
     
 %     if figFlag
@@ -91,7 +62,6 @@ function [M, message_rec] = MOCZmodem(simParams, SNR)
 %     end
 
     decoded_alphas = roots(flip(x_decoded'));
-    %disp(decoded_alphas);
     
     %display decoded zeros
     if figFlag
