@@ -1,7 +1,7 @@
 function [M, message_rec] = MOCZmodem(simParams, SNR)
 
     % -- Params --
-    B = simParams.B;
+    B = simParams.B; %num of sequences in a message
     L = simParams.L; % additional taps that the channel conv adds
     K = simParams.K ; %X(z) polynomial order. there are K+1 coefficents
     Tsym = simParams.Tsym;
@@ -11,7 +11,7 @@ function [M, message_rec] = MOCZmodem(simParams, SNR)
     figFlag = simParams.figFlag;
 
     Lt = L + K; %number of coefficients in the recieved sequence. result of convolution with channel.
-    zeroPad = zeros(L, B);
+    zeroPad = zeros(L, B); %guard zeros - we allow the multipath components to exit the system.
 
     Kidxs = 1 : (K);
     
@@ -23,14 +23,12 @@ function [M, message_rec] = MOCZmodem(simParams, SNR)
     
     alphas = ((1-M)*(R^(-1)) + M * R).*exp(1i*theta_c);
     
-    x_un = flip(poly(alphas))';
-    x_un = [x_un ; zeroPad];
-    x = (x_un / norm(x_un)) * (K+1); % normalize to K+1
+    x_un = flip(poly(alphas))'; %finding coefficients and flip - now the free coefficent is first
+    x = (x_un / norm(x_un)) * sqrt(K+1); % normalize to sqrt(K+1). now total energy of signal will be K+1
+    sigPower = var(x);
+    x = [x ; zeroPad]; %Guard of zeros (channel of L taps)
     
     [x_pb, ~] = pulseSHP(x, simParams, 'modulate');
-
-%     t = (0:1/Fs:Tsym*(K+1 +group_delay/sps) - 1/Fs)';
-%     x_pb = sqrt(2) * real(x_mod.*exp(1i*2*pi*fc*t));
 
 %     % -- Visualization --
     % if figFlag
@@ -55,13 +53,22 @@ function [M, message_rec] = MOCZmodem(simParams, SNR)
 
     %% adding channel
     pathDelays = (0:4) * Tsym; % 5 taps spaced by 1 symbol each
-    pathGains = [0 -2 -3 -6 -10];        % Average path gains in dB
+
+    %generating path gains and normalizing for AverageChannelEnergy = 1
+    %according to the:  
+    %MOCZ_for_Blind_Short-Packet_Communication_Basic_Principles paper -
+    %section V
+    pathGains_dB = [0, -2, -3, -6, -10]; % the average power of echo [dB]
+    linearPower = 10.^(pathGains_dB / 10); %Convert to linear power
+    totalEnergy = sum(linearPower); %calculate total channel energy
+    normalizedLinearGains = linearPower / totalEnergy; %Normalize the linear gains so the total energy is 1
+    pathGains_normalized = 10 * log10(normalizedLinearGains); %convert back to [dB]
     
     % Create the Rayleigh Channel Object
     fadingChannel = comm.RayleighChannel(...
         'SampleRate', Fs, ...
         'PathDelays', pathDelays, ...
-        'AveragePathGains', pathGains, ...
+        'AveragePathGains', pathGains_normalized, ...
         'MaximumDopplerShift', L); % Adjust Doppler for motion/fading speed
     % The output will be longer than the input due to the delay spread
     chanOutput = fadingChannel(x_pb);
@@ -69,31 +76,13 @@ function [M, message_rec] = MOCZmodem(simParams, SNR)
     % Note: To see the "extra" symbols, you may need to flush the channel 
     % or append zeros to the input to allow the multi-path tails to exit.
     release(fadingChannel);
-    x_pb_noisy = awgn(chanOutput, SNR ,'measured');
+    x_pb_noisy = awgn(chanOutput, SNR ,10*log10(sigPower));
     
     %% Decoding
-    % part A - band pass filtering
-    % b_bp = designfilt('bandpassfir', 'FilterOrder', 100, ...
-    %     'CutoffFrequency1', fc- BW, 'CutoffFrequency2', fc + BW, 'SampleRate', Fs);
-    % x_pb_filtred = filtfilt(b_bp.Coefficients, 1, x_pb_noisy);
-    % freqz(b_bp.Coefficients,1,1024,Fs);
-    
-    %part b - shifting to 0 freq
-    % mixed_x = x_pb_filtred.*exp(-1i*2*pi*fc*t);
-    % 
-    % %part c - LP filter
-    % f_low = -BW/2;
-    % f_high = BW/2;
-    % b_lp = designfilt('lowpassfir', 'FilterOrder', 100, ...
-    %     'CutoffFrequency', BW, 'SampleRate', Fs);
-    % 
-    % x_bb =  filtfilt(b_lp.Coefficients, 1,mixed_x);
-    % freqz(b_lp.Coefficients,1,1024,Fs);
-    
-    % 2. Account for Group Delay
-    % The total delay is span symbols (half from TX, half from RX if matched)
     
     [~, x_decoded] = pulseSHP(x_pb_noisy, simParams,'demodulate');
+
+
     message_rec = DiZeT(R, theta_c, x_decoded, K);
     
 %     if figFlag

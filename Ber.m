@@ -11,11 +11,11 @@ simParams.Fs = 200e3;
 simParams.lambda = 1; %according to articles
 simParams.L = 5; % additional taps that the channel conv adds
 simParams.figFlag = 1;
-simParams.betha = 1;
+simParams.betha = 1; %assuming beta = 1
 
 
 BW = 1 / simParams.Tsym; 
-BWn = (1+simParams.betha)*BW; %assuming beta = 1
+BWn = (1+simParams.betha)*BW; 
 EbNo_dB = 0:18;
 SNRa = EbNo_dB + 10*log10(BW / BWn); %in BMOCZ, 1 symbol is 1 bit. BWeff = (1+betha)/Tsym = (1+betha)*BW
 BER = zeros(length(EbNo_dB), 1);
