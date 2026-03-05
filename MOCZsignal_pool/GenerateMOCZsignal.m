@@ -3,19 +3,23 @@ close all;
 
 % -- Params --
 fileName = 'MOCZ_tx.mat';
-B = 20; %num of sequences in a message
+B = 200; %num of sequences in a message. =20
 L = 5; % additional taps that the channel conv adds
 K = 12 ; %X(z) polynomial order. there are K+1 coefficents
 Tsym = 1e-3;
 fc = 15e3;
 Fs = 200e3;
 lambda = 1;
-figFlag = 1;
+figFlag = 0;
 betha = 1;
 BW = 1 / Tsym; 
-BWn = (1+betha)*BW; 
+BWn = (1+betha)*BW;
 
-simParams = struct('B', B, 'K', K, 'Tsym', Tsym, 'fc', fc, 'Fs', Fs, 'lambda', lambda, 'L', L, 'figFlag', figFlag, 'betha', betha);
+% adding zadOffChu for sync:
+N = 63;     % Sequence length
+u = 2;     % Root index (gcd(u,N)=1)
+zadoffChuPair = [u, N];
+
 
 % P is a binary packet. there are B messages (columns) and K bits in each
 % message
@@ -27,7 +31,13 @@ Kidxs = 1:K;
 R = sqrt(1+2*lambda*sin(pi/K));
 theta_c = ((2*pi) * (Kidxs / K))';
 
-    
+simParams = struct('B', B, 'K', K, 'Tsym', Tsym, 'fc', fc, 'Fs', Fs, ...
+    'lambda', lambda, 'L', L, 'figFlag', figFlag, 'betha', betha, ...
+    'zadoffChuPair', zadoffChuPair, 'R', R, 'theta_c', theta_c);
+
+% for sync:
+zc = zadoffChuSeq(u, N);
+
 % Process each message in the packet
 for b = 1:B
     % Get current message bits
@@ -41,7 +51,12 @@ for b = 1:B
     x = (x_un / norm(x_un)) * sqrt(K+1); % normalize to sqrt(K+1). now total energy of signal will be K+1
     
     x_with_guard = [x; zeros(L, 1)]; %Guard of zeros (channel of L taps)
-    
+
+    % adding zadOffChu in the beginning for sync:
+    if b == 1
+        x_with_guard = [zc; zeros(L, 1) ; x_with_guard];
+    end
+    % ask michael if the zc needs pulse shaping?
     % Pulse Shape and Modulate to Passband
     [signal_pb_segment, ~] = pulseSHP(x_with_guard, simParams, 'modulate');
     
@@ -50,5 +65,8 @@ for b = 1:B
 end
 
 % Save to .mat file
-save(fileName, 'signal_pb_total', 'P', 'simParams');
+fileName = sprintf('L%dB%dK%dN%du%d', L, B, K, N, u);
+% path = fullfile("C:\Users\SHOHAMM\Desktop\projB\source_code\MOCZ_pool_updated_17.2\signalsPool", fileName);
+path = fullfile("C:\Users\user\OneDrive - Technion\Desktop\פרויקט ב 5.3.26", fileName);
+save(path, 'signal_pb_total', 'P', 'simParams');
 fprintf('MOCZ signal with B=%d messages saved to %s\n', B, fileName);
