@@ -37,6 +37,12 @@ simParams = struct('B', B, 'K', K, 'Tsym', Tsym, 'fc', fc, 'Fs', Fs, ...
 
 % for sync:
 zc = zadoffChuSeq(u, N);
+% Initialize an empty vector for all baseband symbols
+symbols_total = [];
+% Add Zadoff-Chu sequence and its guard to the beginning
+zc_with_guard = [zc; zeros(L, 1)];
+
+symbols_total = [symbols_total; zc_with_guard];
 
 % Process each message in the packet
 for b = 1:B
@@ -51,22 +57,21 @@ for b = 1:B
     x = (x_un / norm(x_un)) * sqrt(K+1); % normalize to sqrt(K+1). now total energy of signal will be K+1
     
     x_with_guard = [x; zeros(L, 1)]; %Guard of zeros (channel of L taps)
-
-    % adding zadOffChu in the beginning for sync:
-    if b == 1
-        x_with_guard = [zc; zeros(L, 1) ; x_with_guard];
-    end
-    % ask michael if the zc needs pulse shaping?
-    % Pulse Shape and Modulate to Passband
-    [signal_pb_segment, ~] = pulseSHP(x_with_guard, simParams, 'modulate');
     
-    % Concatenate to the total packet vector
-    signal_pb_total = [signal_pb_total; signal_pb_segment];
+    symbols_total = [symbols_total; x_with_guard];
+
 end
+
+[signal_pb_total, ~] = pulseSHP(symbols_total, simParams, 'modulate');
 
 % Save to .mat file
 fileName = sprintf('L%dB%dK%dN%du%d', L, B, K, N, u);
 % path = fullfile("C:\Users\SHOHAMM\Desktop\projB\source_code\MOCZ_pool_updated_17.2\signalsPool", fileName);
-path = fullfile("C:\Users\user\OneDrive - Technion\Desktop\פרויקט ב 5.3.26", fileName);
+%path = fullfile("C:\Users\user\OneDrive - Technion\Desktop\פרויקט ב 5.3.26", fileName);
+
+%save in the script's location:
+scriptPath = fileparts(mfilename('fullpath'));
+path = fullfile(scriptPath, fileName);
+
 save(path, 'signal_pb_total', 'P', 'simParams');
 fprintf('MOCZ signal with B=%d messages saved to %s\n', B, fileName);

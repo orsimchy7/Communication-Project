@@ -1,6 +1,9 @@
 function [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, x_pb, P)
-%MOCZSIMCHANNELNDECODING Summary of this function goes here
-%   Detailed explanation goes here
+%MOCZSIMCHANNELNDECODING 
+%   applying channel on the passband signal.
+%   Decoding first with pulse shaping to get base band symblos.
+%   Using DiZet on base band symbols to find the binary messages.
+%   The decoding considers the L zero taps transmitted and removes them
 % assuming x_pb is a vector that is on pass band - contain zadoffchu and
 % dataload
     K = simParams.K;
@@ -37,7 +40,7 @@ function [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, x_pb, P)
     sps = Tsym * Fs; %samples per symbol
     h_channel_upsmp = upsample(h_channel, sps);
     h_channel_upsmp = h_channel_upsmp / norm(h_channel_upsmp); %normalize
-    chanOutput = filter(h_channel_upsmp, 1, x_pb);
+    chanOutput = filter(h_channel_upsmp, 1, x_pb); %removes tail with last echos
 %     chanOutput = x_pb;
     
     x_pb_noisy = awgn(chanOutput, SNR ,'measured');
@@ -61,7 +64,11 @@ function [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, x_pb, P)
     % now, x_decoded is a corrupted version of [B sequences of
     % (K+1 data bits, L guard bits)]. must check that its truly has a total
     % of B*(K+1+L) elements!
-    x_decoded_matrix = reshape(x_decoded, K + 1 + L, B);
+    
+    %--- FIX --- different size elements --> i changed the reshape
+    x_decoded_matrix = reshape(x_decoded, [], B);
+    %x_decoded_matrix = reshape(x_decoded, K + 1 + L, B);
+
     % ommiting the guard bits:
     x_decoded_matrix = x_decoded_matrix(1 : K + 1, :);
 
