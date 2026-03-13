@@ -18,15 +18,15 @@ SNRa = 10*log10((K/((K+1)*simParams.Tsym*BW*(1+simParams.betha))) * 10.^(EbNo_dB
 BER = zeros(length(SNRa), 1);
 errorsNum = zeros(length(SNRa), 1);
 
-attemptNum = 1000; %200
+attemptNum = 500 + 40 * (1:1:length(SNRa)); %200
 
 %% running for different additive noise SNR
 for i = 1 : length(SNRa)
     fprintf('i = %d \n', i);
     SNR = SNRa(i);
-    for j = 1: attemptNum
+    for j = 1: attemptNum(i)
         [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, signal_pb_total, P);
-        errorsNum(i) = errorsNum(i) + (1/attemptNum) * sum(abs(P - P_rec), 'all');
+        errorsNum(i) = errorsNum(i) + (1/attemptNum(i)) * sum(abs(P - P_rec), 'all');
     end
     BER(i) = errorsNum(i) / (B * K);
 end
