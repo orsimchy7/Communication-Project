@@ -1,4 +1,4 @@
-function [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, x_pb, P)
+function [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, x_pb, P, x_bb, group_delay)
 %MOCZSIMCHANNELNDECODING 
 %   applying channel on the passband signal.
 %   Decoding first with pulse shaping to get base band symblos.
@@ -36,14 +36,24 @@ function [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, x_pb, P)
 %     release(fadingChannel);
 
     %option 2 - static fir
-    h_channel = [0.75, -0.35, 0.15, -0.07, 0.003];
+    h_channel = [0.75, -0.35, 0.1, -0.02, 0.003];
     sps = Tsym * Fs; %samples per symbol
     h_channel_upsmp = upsample(h_channel, sps);
     h_channel_upsmp = h_channel_upsmp / norm(h_channel_upsmp); %normalize
+
+    %old:
     chanOutput = filter(h_channel_upsmp, 1, x_pb); %removes tail with last echos
+    %new (chat suggested):
+    % x_pb_padded = [x_pb; zeros(group_delay,1)];
+    % chanOutput = filter(h_channel_upsmp, 1, x_pb_padded); %check it out!!
 %     chanOutput = x_pb;
     
     x_pb_noisy = awgn(chanOutput, SNR ,'measured');
+
+    %%%
+    % BB TEST
+    % x_decoded = awgn(conv(h_channel/ norm(h_channel), x_bb), SNR ,'measured');
+    %%%
     
     %% 2. Decoding
     N = simParams.zadoffChuPair(2);
@@ -70,7 +80,7 @@ function [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, x_pb, P)
     %x_decoded_matrix = reshape(x_decoded, K + 1 + L, B);
 
     % ommiting the guard bits:
-    x_decoded_matrix = x_decoded_matrix(1 : K + 1, :);
+    % % % x_decoded_matrix = x_decoded_matrix(1 : K + 1, :);
 
     for b = 1 : B
         x_vec_decoded = x_decoded_matrix(:, b);
@@ -103,4 +113,3 @@ function [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, x_pb, P)
         end
     end
 end
-

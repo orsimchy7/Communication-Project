@@ -1,9 +1,6 @@
-clear all;
-close all;
-
+function [P, signal_pb_total, simParams, x_bb, group_delay] = generateFunc()
 % -- Params --
-fileName = 'MOCZ_tx.mat';
-B = 200; %num of sequences in a message. =20
+B = 200; %num of sequences in a message. =200
 L = 5; % additional taps that the channel conv adds
 K = 12 ; %X(z) polynomial order. there are K+1 coefficents
 Tsym = 1e-3;
@@ -41,7 +38,6 @@ zc = zadoffChuSeq(u, N);
 symbols_total = [];
 % Add Zadoff-Chu sequence and its guard to the beginning
 zc_with_guard = [zc; zeros(L, 1)];
-
 symbols_total = [symbols_total; zc_with_guard];
 
 % Process each message in the packet
@@ -62,16 +58,6 @@ for b = 1:B
 
 end
 
-[signal_pb_total, ~] = pulseSHP(symbols_total, simParams, 'modulate');
-
-% Save to .mat file
-fileName = sprintf('L%dB%dK%dN%du%d', L, B, K, N, u);
-% path = fullfile("C:\Users\SHOHAMM\Desktop\projB\source_code\MOCZ_pool_updated_17.2\signalsPool", fileName);
-%path = fullfile("C:\Users\user\OneDrive - Technion\Desktop\פרויקט ב 5.3.26", fileName);
-
-%save in the script's location:
-scriptPath = fileparts(mfilename('fullpath'));
-path = fullfile(scriptPath, fileName);
-
-save(path, 'signal_pb_total', 'P', 'simParams');
-fprintf('MOCZ signal with B=%d messages saved to %s\n', B, fileName);
+[signal_pb_total, ~, group_delay] = pulseSHP(symbols_total, simParams, 'modulate');
+x_bb = signal_pb_total;
+end

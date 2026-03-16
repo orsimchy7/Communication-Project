@@ -1,4 +1,4 @@
-function [signal_pb, x_decoded] = pulseSHP(x, simParams, mode)
+function [signal_pb, x_decoded, group_delay] = pulseSHP(x, simParams, mode)
 %Description:
 % The function had two operational modes: "modulate" / "demodulate"
 %   modulate: the function gets coefficients to transmit and apply
