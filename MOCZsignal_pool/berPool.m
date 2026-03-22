@@ -27,7 +27,10 @@ for i = 1 : length(SNRa)
     SNR = SNRa(i);
     for j = 1: attemptNum(i)
         [P, signal_pb_total, ~, x_bb, group_delay] = generateFunc();
-        [P_rec] = MOCZsimChannelNdecoding(simParams, SNR, signal_pb_total, P, x_bb, group_delay);
+        %[P_rec] = MOCZsimChannelNdecoding(simParams, SNR, signal_pb_total, P, x_bb, group_delay);
+
+        %New Decoder (includes zadoffchu crosscorelation)
+        [P_rec] = MOCZRealDecoding(simParams, SNR, signal_pb_total, P);
         errorsNum(i) = errorsNum(i) + sum(abs(P - P_rec), 'all');
     end
     BER(i) = errorsNum(i) / (B * K * attemptNum(i));
