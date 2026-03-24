@@ -19,7 +19,7 @@ SNRa = 10*log10((K/((K+1)*simParams.Tsym*BW*(1+simParams.betha))) * 10.^(EbNo_dB
 BER = zeros(length(SNRa), 1);
 errorsNum = zeros(length(SNRa), 1);
 
-attemptNum = 500 + 30 * (1:1:length(SNRa)); %200
+attemptNum = 200 + 30 * (1:1:length(SNRa)); %200
 
 %% running for different additive noise SNR
 for i = 1 : length(SNRa)
