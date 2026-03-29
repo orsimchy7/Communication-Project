@@ -1,21 +1,13 @@
-function [P, signal_pb_total, simParams, x_bb, group_delay] = generateFunc()
+function [P, signal_pb_total, x_bb, group_delay] = generateFunc(simParams)
 % -- Params --
-B = 200; %num of sequences in a message. =200
-L = 5; % additional taps that the channel conv adds
-K = 12 ; %X(z) polynomial order. there are K+1 coefficents
-Tsym = 1e-3;
-fc = 15e3;
-Fs = 200e3;
-lambda = 1;
-figFlag = 0;
-betha = 1;
-BW = 1 / Tsym; 
-BWn = (1+betha)*BW;
+% 1. MOCZ
+B = simParams.B;
+L = simParams.L;
+K = simParams.K;
 
-% adding zadOffChu for sync:
-N = 63;     % Sequence length
-u = 2;     % Root index (gcd(u,N)=1)
-zadoffChuPair = [u, N];
+% 2. zadOffChu (sync):
+N = simParams.zadoffChuPair(2);
+u = simParams.zadoffChuPair(1);
 
 
 % P is a binary packet. there are B messages (columns) and K bits in each
@@ -24,13 +16,8 @@ P = randi([0,1], K, B);
 signal_pb_total = [];
 
 % -- Huffman BMOCZ --
-Kidxs = 1:K;
-R = sqrt(1+2*lambda*sin(pi/K));
-theta_c = ((2*pi) * (Kidxs / K))';
-
-simParams = struct('B', B, 'K', K, 'Tsym', Tsym, 'fc', fc, 'Fs', Fs, ...
-    'lambda', lambda, 'L', L, 'figFlag', figFlag, 'betha', betha, ...
-    'zadoffChuPair', zadoffChuPair, 'R', R, 'theta_c', theta_c);
+R = simParams.R;
+theta_c = simParams.theta_c;
 
 % for sync:
 zc = zadoffChuSeq(u, N);

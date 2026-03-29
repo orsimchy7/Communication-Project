@@ -1,4 +1,4 @@
-function [P_rec] = MOCZRealDecoding(simParams, SNR, x_pb, P)
+function [P_rec_D, P_rec_G, P_rec_M] = MOCZRealDecoding(simParams, SNR, x_pb, P)
 % MOCZREALDECODING decodes a real recorded passband signal.
 % It performs carrier down-conversion, matched filtering, exact
 % Zadoff-Chu synchronization, downsampling, and DiZeT decoding.
@@ -14,7 +14,9 @@ function [P_rec] = MOCZRealDecoding(simParams, SNR, x_pb, P)
     beta = simParams.betha;
     sps = Tsym * Fs;
     
-    P_rec = zeros(K, B);
+    P_rec_D = zeros(K, B);
+    P_rec_G = zeros(K, B); % Initialize the second output for decoded messages
+    P_rec_M = zeros(K, B);
 
     %% Adding channel
     %for real experiments remove this section. 
@@ -99,7 +101,11 @@ function [P_rec] = MOCZRealDecoding(simParams, SNR, x_pb, P)
         
         % Run DiZeT on the current message block
         message_rec = DiZeT(R, theta_c, x_vec_decoded, K);
-        P_rec(:, b) = message_rec;
+        P_rec_D(:, b) = message_rec;
+        message_rec = Greedy(x_vec_decoded, simParams);
+        P_rec_G(:, b) = message_rec; % Store the greedy decoded message
+        message_rec = ML(x_vec_decoded, simParams);
+        P_rec_M(:, b) = message_rec;
         
         % Visualization (Only runs if figFlag is 1 AND 'P' was provided)
         if simParams.figFlag && nargin == 3

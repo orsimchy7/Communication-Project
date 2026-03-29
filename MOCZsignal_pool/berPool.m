@@ -4,7 +4,7 @@ clear all;
 close all;
 %% load variables from mat file whose created by GenerateMOCZsignal
 % load("L5B200K12N63u2.mat"); % 'signal_pb_total', 'P', 'simParams'
-[~, ~, simParams, ~] = generateFunc();
+[simParams] = makeParams();
 
 %% preparing
 B = simParams.B;
@@ -16,8 +16,13 @@ EbNo_dB = 0:18;
 % SNRa = -10 : 1 : 6;
 SNRa = 10*log10((K/((K+1)*simParams.Tsym*BW*(1+simParams.betha))) * 10.^(EbNo_dB/10));
 % SNRa = ones(19,1)*100;
-BER = zeros(length(SNRa), 1);
-errorsNum = zeros(length(SNRa), 1);
+% BER = zeros(length(SNRa), 1);
+errorsNum_D = zeros(length(SNRa), 1);
+errorsNum_G = zeros(length(SNRa), 1);
+errorsNum_M = zeros(length(SNRa), 1);
+BER_D = zeros(length(SNRa), 1);
+BER_G = zeros(length(SNRa), 1);
+BER_M = zeros(length(SNRa), 1);
 
 attemptNum = 200 + 30 * (1:1:length(SNRa)); %200
 
@@ -26,23 +31,29 @@ for i = 1 : length(SNRa)
     fprintf('i = %d \n', i);
     SNR = SNRa(i);
     for j = 1: attemptNum(i)
-        [P, signal_pb_total, ~, x_bb, group_delay] = generateFunc();
+        [P, signal_pb_total, x_bb, group_delay] = generateFunc(simParams);
         %[P_rec] = MOCZsimChannelNdecoding(simParams, SNR, signal_pb_total, P, x_bb, group_delay);
 
         %New Decoder (includes zadoffchu crosscorelation)
-        [P_rec] = MOCZRealDecoding(simParams, SNR, signal_pb_total, P);
-        errorsNum(i) = errorsNum(i) + sum(abs(P - P_rec), 'all');
+        [P_rec_D, P_rec_G, P_rec_M] = MOCZRealDecoding(simParams, SNR, signal_pb_total, P);
+        errorsNum_D(i) = errorsNum_D(i) + sum(abs(P - P_rec_D), 'all');
+        errorsNum_G(i) = errorsNum_G(i) + sum(abs(P - P_rec_G), 'all');
+        errorsNum_M(i) = errorsNum_M(i) + sum(abs(P - P_rec_M), 'all');
     end
-    BER(i) = errorsNum(i) / (B * K * attemptNum(i));
-    fprintf('BER of snr %d is %d \n', SNR, BER(i));
+    BER_D(i) = errorsNum_D(i) / (B * K * attemptNum(i));
+    BER_G(i) = errorsNum_G(i) / (B * K * attemptNum(i));
+    BER_M(i) = errorsNum_M(i) / (B * K * attemptNum(i));
+    fprintf('snr %d, BER_D is %d, BER_G is %d, BER_M is %d\n', SNR, BER_D(i), BER_G(i), BER_M(i));
 end
 
 %% plotting BER results
-disp(errorsNum);
+% disp(errorsNum);
 figure('Color', 'w'); % White background for reports
 % Use semilogy for the logarithmic Y-axis
-semilogy(EbNo_dB, BER, 'bo-', 'LineWidth', 2, 'MarkerSize', 8, 'MarkerFaceColor', 'b');
+semilogy(EbNo_dB(1:13), BER_D(1:13), 'bo-', 'LineWidth', 2, 'MarkerSize', 8, 'MarkerFaceColor', 'b');
 hold on;
+semilogy(EbNo_dB(1:13), BER_G(1:13), 'ro-', 'LineWidth', 2, 'MarkerSize', 8, 'MarkerFaceColor', 'r');
+semilogy(EbNo_dB(1:13), BER_M(1:13), 'go-', 'LineWidth', 2, 'MarkerSize', 8, 'MarkerFaceColor', 'g');
 grid on;
 set(gca, 'YMinorGrid', 'on', 'XMinorGrid', 'off'); % Improves readability
 xlabel('E_b/N_0 (dB)', 'FontSize', 12, 'FontWeight', 'bold');
@@ -51,4 +62,7 @@ title('System BER Performance - normal channel and with zc', 'FontSize', 14);
 % Optional: Set specific limits to make it look "standard"
 % ylim([1e-6 1]); 
 xlim([min(EbNo_dB) max(EbNo_dB)]);
-legend('Simulated System', 'Location', 'southwest');
+legend('decoder: DiZeT', 'decoder: Greedy', 'decoder: ML', 'Location', 'southwest');
+hold off;
+
+%make it work
