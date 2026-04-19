@@ -1,0 +1,21 @@
+1. change: B=20
+2. before anything else, stretch the amplitude range to [-10, 10] volt
+3. a. add a chirp signal with params: log chirp, 50[ms]  (wide BW).
+   b. in addition, create decoder for the chirp.
+4. instead of "randi", use "randper" in order to prevent redundance (repeated meesages)
+5. also, permutate signals according to:
+	1. SNR: a. play with amplitude
+		b. add to the setup component that will add white noise
+	2. K (number of bits)
+	3. L (guards number): 50, 45, 40, .., 5 [ms]
+	4. with chirp / without chirp
+6. validation: the CCPF VS. PAPR graph gives a good reference point.
+7. bonus: checkout -  a. transmitting images
+		      b. quantization
+
+
+
+
+
+follow-up questions:
+1. how do we infer from the chirp measurement the zeros of the pool channel? (delta will imply on the channel but how does it connected to zeros?)
