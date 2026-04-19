@@ -1,4 +1,4 @@
-function [P, signal_pb_total, x_bb, group_delay] = generateFunc(simParams)
+function [P, signal_pb_total, x_bb, group_delay, simParams] = generateFunc(simParams)
 % -- Params --
 % 1. MOCZ
 B = simParams.B;
@@ -12,7 +12,20 @@ u = simParams.zadoffChuPair(1);
 
 % P is a binary packet. there are B messages (columns) and K bits in each
 % message
-P = randi([0,1], K, B); 
+% P = randi([0,1], K, B);
+P = zeros(K, B);
+usedIdx = simParams.usedIdx;
+bits = ff2n(K);
+for jj = 1 : B
+    idx = randi([1, 2^K]);
+    while ~all(usedIdx) && usedIdx(idx)
+        idx = randi([1, 2^K]); % Generate a new random index
+    end
+    usedIdx(idx) = true; % Mark the index as used
+    P(:, jj) = bits(idx, :)'; % Store the selected bits in the packet
+end
+simParams.usedIdx = usedIdx;
+
 signal_pb_total = [];
 
 % -- Huffman BMOCZ --
@@ -46,5 +59,10 @@ for b = 1:B
 end
 
 [signal_pb_total, ~, group_delay] = pulseSHP(symbols_total, simParams, 'modulate');
-x_bb = signal_pb_total;
+M_sig = max(signal_pb_total, [], "all");
+m_sig = min(signal_pb_total, [], "all");
+a = -10;
+b = 10;
+stretched_sig = a + (signal_pb_total - m_sig) * (b - a)/(M_sig - m_sig);
+x_bb = stretched_sig;
 end

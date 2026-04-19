@@ -99,13 +99,18 @@ function [P_rec_D, P_rec_G, P_rec_M] = MOCZRealDecoding(simParams, SNR, x_pb, P)
     for b = 1 : B
         x_vec_decoded = x_decoded_matrix(:, b);
         
-        % Run DiZeT on the current message block
+        % Run decoder on the current message block
         message_rec = DiZeT(R, theta_c, x_vec_decoded, K);
         P_rec_D(:, b) = message_rec;
         message_rec = Greedy(x_vec_decoded, simParams);
         P_rec_G(:, b) = message_rec; % Store the greedy decoded message
-        message_rec = ML(x_vec_decoded, simParams);
-        P_rec_M(:, b) = message_rec;
+        if K <= 8
+            message_rec = ML(x_vec_decoded, simParams);
+            P_rec_M(:, b) = message_rec;
+        else
+            fprintf('ML decoder was not activated because K > 8');
+            P_rec_M(:, b) = zeros(K,1);
+        end
         
         % Visualization (Only runs if figFlag is 1 AND 'P' was provided)
         if simParams.figFlag && nargin == 3

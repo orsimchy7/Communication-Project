@@ -31,7 +31,7 @@ for i = 1 : length(SNRa)
     fprintf('i = %d \n', i);
     SNR = SNRa(i);
     for j = 1: attemptNum(i)
-        [P, signal_pb_total, x_bb, group_delay] = generateFunc(simParams);
+        [P, signal_pb_total, x_bb, group_delay, simParams] = generateFunc(simParams);
         %[P_rec] = MOCZsimChannelNdecoding(simParams, SNR, signal_pb_total, P, x_bb, group_delay);
 
         %New Decoder (includes zadoffchu crosscorelation)

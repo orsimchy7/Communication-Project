@@ -5,19 +5,12 @@ function [simParams] = makeParams()
 
 % -- Params --
 
-% 1. MOCZ
-B = 200; %num of sequences in a message. =200
+% 1. MOCZ and packet configuration
+B = 20; %num of sequences in a message. =200
 L = 5; % additional taps that the channel conv adds
 K = 7 ; %X(z) polynomial order. there are K+1 coefficents
-Tsym = 1e-3;
-fc = 15e3;
-Fs = 200e3;
 lambda = 1;
-figFlag = 0;
-betha = 1;
-BW = 1 / Tsym; 
-BWn = (1+betha)*BW;
-Kidxs = 0:K-1; %instead of 1:K, check if works
+Kidxs = 0:K-1;
 R = sqrt(1+2*lambda*sin(pi/K));
 theta_c = ((2*pi) * (Kidxs / K))';
 
@@ -65,12 +58,24 @@ for idx = 1:2^K
     % Cinv_all(:,:,idx) = inv(sqrtm(C));
 end
 
+% 5. general
+usedIdx = false(2^K,1);
+figFlag = 0;
+
+Tsym = 1e-3;
+fc = 15e3;
+Fs = 200e3;
+betha = 1;
+% BW = 1 / Tsym; 
+% BWn = (1+betha)*BW;
+
 
 simParams = struct('B', B, 'K', K, 'Tsym', Tsym, 'fc', fc, 'Fs', Fs, ...
     'lambda', lambda, 'L', L, 'figFlag', figFlag, 'betha', betha, ...
     'zadoffChuPair', zadoffChuPair, ...
     'N', N, 'V_bank', V_bank,  ...
     'combinations', combinations,'Cinv_all',Cinv_all,'V_all',V_all, ...
-    'R', R, 'theta_c', theta_c);
+    'R', R, 'theta_c', theta_c, ...
+    'usedIdx', usedIdx);
 
 end

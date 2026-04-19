@@ -30,6 +30,7 @@ function [signal_pb, x_decoded, group_delay] = pulseSHP(x, simParams, mode)
         t = (0:length(signal_bb)-1)' / Fs;
         x_decoded = [];
         signal_pb = sqrt(2) * real(signal_bb.*exp(1i*2*pi*fc*t));
+        
     elseif strcmp(mode, 'demodulate')
         % -- Decoding raised cosing --
         t = (0:1/Fs:Tsym*(K + 1 + (group_delay/sps)) - 1/Fs)';
