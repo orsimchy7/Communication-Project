@@ -1,7 +1,8 @@
-1. change: B=20
-2. before anything else, stretch the amplitude range to [-10, 10] volt
-3. a. add a chirp signal with params: log chirp, 50[ms]  (wide BW).
-   b. in addition, create decoder for the chirp.
+1. V	change: B=20
+2. V	before anything else, stretch the amplitude range to [-10, 10] volt
+3. V 	a. add a chirp signal with params: log chirp, 50[ms]  (wide BW).
+   V 	b. in addition, create decoder for the chirp.
+   c. make it a function
 4. instead of "randi", use "randper" in order to prevent redundance (repeated meesages)
 5. also, permutate signals according to:
 	1. SNR: a. play with amplitude
