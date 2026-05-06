@@ -3,16 +3,17 @@
 3. V 	a. add a chirp signal with params: log chirp, 50[ms]  (wide BW).
    V 	b. in addition, create decoder for the chirp.
    c. make it a function
-4. instead of "randi", use "randper" in order to prevent redundance (repeated meesages)
+4. V	instead of "randi", use "randper" in order to prevent redundance (repeated meesages)
 5. also, permutate signals according to:
 	1. SNR: a. play with amplitude
 		b. add to the setup component that will add white noise
 	2. K (number of bits)
 	3. L (guards number): 50, 45, 40, .., 5 [ms]
 	4. with chirp / without chirp
-6. validation: the CCPF VS. PAPR graph gives a good reference point.
+6. V validation: the CCPF VS. PAPR graph gives a good reference point.
 7. bonus: checkout -  a. transmitting images
-		      b. quantization
+		      		  b. quantization
+8. Document in file
 
 
 
