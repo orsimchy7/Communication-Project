@@ -1,34 +1,92 @@
 function [P, signal_pb_total, x_bb, group_delay, simParams] = generateFunc(simParams)
 % -- Params --
-% 1. MOCZ
-B = simParams.B;
+% MOCZ
 L = simParams.L;
 K = simParams.K;
 
-% 2. zadOffChu (sync):
+% Check for image coding flag (defaults to 0 if not provided)
+if isfield(simParams, 'image_coding')
+    image_coding = simParams.image_coding;
+else
+    image_coding = 0;
+end
+
+% zadOffChu (sync):
 N = simParams.zadoffChuPair(2);
 u = simParams.zadoffChuPair(1);
 
-
-% P is a binary packet. there are B messages (columns) and K bits in each
-% message
-% P = randi([0,1], K, B);
-P = zeros(K, B);
-usedIdx = simParams.usedIdx;
-bits = ff2n(K);
-for jj = 1 : B
-    idx = randi([1, 2^K]);
-    while ~all(usedIdx) && usedIdx(idx)
-        idx = randi([1, 2^K]); % Generate a new random index
+%% Packet Configuration (Image vs. Random)
+if image_coding == 1
+    % --- IMAGE CODING MODE ---
+    
+    % Determine which image file to read (checking common names)
+    target_file = '';
+    if isfield(simParams, 'image_file') && isfile(simParams.image_file)
+        target_file = simParams.image_file;
+    elseif isfile('my_image.jpg')
+        target_file = 'my_image.jpg';
     end
-    usedIdx(idx) = true; % Mark the index as used
-    P(:, jj) = bits(idx, :)'; % Store the selected bits in the packet
+    
+    if ~isempty(target_file)
+        % Read the original image
+        img_raw = imread(target_file);
+        
+        % Convert logical matrix to double to avoid downstream function crashes
+        if islogical(img_raw)
+            img_raw = double(img_raw);
+        end
+        
+        % Resize to exactly 256 x 256 pixels
+        img_resized = imresize(img_raw, [256, 256]);
+        
+        % Convert to grayscale if it is a color image (RGB)
+        if size(img_resized, 3) == 3
+            img_gray = rgb2gray(img_resized);
+        else
+            img_gray = img_resized;
+        end
+        
+        % Convert to binary (pure black and white - logical 0 and 1)
+        img_binary = imbinarize(img_gray);
+    else
+        % Fallback: Generate a default 256x256 geometric cross pattern if no file exists
+        img_binary = zeros(256, 256);
+        img_binary(88:168, 88:168) = 1;  % Center square
+        img_binary(32:224, 116:140) = 1; % Vertical bar
+        img_binary(116:140, 32:224) = 1; % Horizontal bar
+        fprintf('Warning: Image file not found. Using default 256x256 cross pattern.\n');
+    end
+    
+    % Serialize the 256x256 image into a 1D bitstream (65,536 bits)
+    bit_stream = double(img_binary(:));
+    
+    % Calculate and update B dynamically to fit the image exactly
+    B = length(bit_stream) / K; 
+    simParams.B = B; 
+    
+    % Shape into the K x B packet matrix
+    P = reshape(bit_stream, [K, B]);
+    
+else
+    % --- RANDOM PERMUTATIONS MODE  ---
+    B = simParams.B;
+    P = zeros(K, B);
+    usedIdx = simParams.usedIdx;
+    bits = ff2n(K);
+    for jj = 1 : B
+        idx = randi([1, 2^K]);
+        while ~all(usedIdx) && usedIdx(idx)
+            idx = randi([1, 2^K]); 
+        end
+        usedIdx(idx) = true; 
+        P(:, jj) = bits(idx, :)'; 
+    end
+    simParams.usedIdx = usedIdx;
 end
-simParams.usedIdx = usedIdx;
 
 signal_pb_total = [];
 
-% -- Huffman BMOCZ --
+%% -- Huffman BMOCZ --
 R = simParams.R;
 theta_c = simParams.theta_c;
 
@@ -55,7 +113,6 @@ for b = 1:B
     x_with_guard = [x; zeros(L, 1)]; %Guard of zeros (channel of L taps)
     
     symbols_total = [symbols_total; x_with_guard];
-
 end
 
 [signal_pb_total, ~, group_delay] = pulseSHP(symbols_total, simParams, 'modulate');
